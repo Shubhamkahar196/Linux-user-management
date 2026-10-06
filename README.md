@@ -1,142 +1,275 @@
-#!/bin/bash
+# 🐧 Real-Time Linux User Management CLI Tool
 
-# Check root privilege
-check_root(){
-    if [[ "$EUID" -ne 0 ]]; then
-        echo "Error: This script must be run as root user." >&2
-        exit 1
-    fi
-}
+An interactive, Bash-based **Linux User Management CLI Tool** designed to automate common user lifecycle and system administration tasks.
 
-# Create user
-create_user(){
-    read -p "Enter username to create: " username
-    username=$(echo "$username" | xargs)
+The project demonstrates practical Linux administration, Bash scripting, input validation, privilege management, user/group administration, and account access control — concepts commonly used in **Linux, DevOps, Cloud, and System Administration** environments.
 
-    if [[ -z "$username" ]]; then
-        echo "Username cannot be empty."
-        return
-    fi
+![Linux User Management CLI](https://github.com/user-attachments/assets/0b1029c9-3fcd-4cad-93da-d84092c457b3)
 
-    if id "$username" &>/dev/null; then
-        echo "User '$username' already exists."
-        return
-    fi
+---
 
-    read -s -p "Enter password for '$username': " password
-    echo
-    read -s -p "Confirm password for '$username': " password_confirm
-    echo
+## 📌 Project Overview
 
-    if [[ "$password" != "$password_confirm" ]]; then
-        echo "Error: Passwords do not match."
-        return
-    fi
+Managing Linux users manually can become repetitive and error-prone, especially when handling tasks such as:
 
-    useradd -m -s /bin/bash "$username"
-    echo "$username:$password" | chpasswd
-    echo "User '$username' created successfully."
+- Developer onboarding
+- Intern or contractor access
+- User group assignment
+- Temporary account suspension
+- User account cleanup
+- Permission-related administration
 
-    read -p "Add user to a group? (y/n): " add_group
-    if [[ "$add_group" =~ ^[Yy]$ ]]; then
-        read -p "Enter group name: " groupname
-        groupname=$(echo "$groupname" | xargs)
+This project provides an interactive command-line interface that automates these common operations while applying basic validation and safety checks.
 
-        if grep -q "^$groupname:" /etc/group; then
-            usermod -aG "$groupname" "$username"
-            echo "User '$username' added to group '$groupname'."
-        else
-            read -p "Group '$groupname' does not exist. Create new group? (y/n): " create_group
-            if [[ "$create_group" =~ ^[Yy]$ ]]; then
-                groupadd "$groupname"
-                usermod -aG "$groupname" "$username"  # Fixed missing '$'
-                echo "Group '$groupname' created and user '$username' added to it."
-            else
-                echo "Skipping group creation."
-            fi
-        fi
-    fi 
-}
+The goal was to build a practical Linux administration project rather than simply writing individual shell commands.
 
-# Delete user
-delete_user(){
-    read -p "Enter username to delete: " username
-    username=$(echo "$username" | xargs)
+---
 
-    if ! id "$username" &>/dev/null; then
-        echo "User '$username' does not exist."
-        return 
-    fi
+## 🎯 Project Objectives
 
-    read -p "Are you sure you want to delete user '$username'? (y/n): " confirm
-    if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        userdel -r "$username"
-        echo "User '$username' deleted successfully."
-    else
-        echo "User deletion aborted."
-    fi
-}
+The main objectives of this project are to:
 
-# List all users
-list_users(){
-    echo "Listing all system users:"
-    awk -F ":" '{print $1}' /etc/passwd
-}
+- Automate common Linux user-management operations
+- Practice Bash scripting and shell automation
+- Work with Linux system utilities
+- Implement root privilege enforcement
+- Handle user and group lifecycle operations
+- Validate and sanitize user input
+- Implement safe account deletion
+- Manage temporary account access using lock/unlock operations
+- Understand how Linux stores and manages user accounts
 
-# Lock user
-lock_user(){
-    read -p "Enter username to lock: " username
-    username=$(echo "$username" | xargs)
+---
 
-    if id "$username" &>/dev/null; then
-        passwd -l "$username"
-        echo "User '$username' has been locked."
-    else
-        echo "User '$username' does not exist."
-    fi
-}
+## ✨ Features
 
-# Unlock user
-unlock_user(){
-    read -p "Enter username to unlock: " username
-    username=$(echo "$username" | xargs)
-    
-    if id "$username" &>/dev/null; then
-        passwd -u "$username"
-        chage -E -1 "$username"
-        usermod -s /bin/bash "$username"
-        echo "User '$username' has been unlocked."
-    else
-        echo "User '$username' does not exist."
-    fi
-}
+### 🔐 Root Privilege Enforcement
 
-show_menu(){
-    echo "__________________________"
-    echo " User Management Script"
-    echo "__________________________"
-    echo "1- Create a new user"
-    echo "2- Delete a user"
-    echo "3- List all users"
-    echo "4- Lock a user"
-    echo "5- Unlock a user"
-    echo "6- Exit"
-    echo "__________________________"
-}
+The script verifies that it is being executed with sufficient privileges before performing system-level user-management operations.
 
-check_root
+```bash
+sudo ./user_management.sh
 
-while true; do
-    show_menu
-    read -p "Choose an option: " choice
+👤 Interactive User Creation
+Provides a prompt-driven workflow for creating Linux users.
 
-    case $choice in
-        1) create_user ;;
-        2) delete_user ;;
-        3) list_users ;;
-        4) lock_user ;;
-        5) unlock_user ;;
-        6) echo "Exiting..."; exit 0 ;;
-        *) echo "Invalid option. Please select a valid choice." ;;
-    esac
-done 
+Features include:
+
+Username input
+Password creation
+Password confirmation
+Input trimming using xargs
+Confirmation prompts
+Automatic group creation
+User-to-group assignment
+
+Example:
+Enter username to create: developer
+
+Enter password for 'developer':
+Confirm password for 'developer':
+
+User 'developer' created successfully.
+
+Add user to a group? (y/n): y
+Enter group name: devteam
+
+Group 'devteam' does not exist.
+Create new group? (y/n): y
+
+Group 'devteam' created and user 'developer' added to it.
+
+🗑️ Safe User Deletion
+
+Allows administrators to remove a Linux user through an interactive workflow.
+
+The deletion process includes confirmation before removing the account and its associated home directory.
+
+🔒 Account Lock & Unlock
+
+Supports temporary access management using Linux account locking.
+
+Useful scenarios include:
+
+Temporary employee leave
+Intern access suspension
+Contractor access management
+Temporary account deactivation
+
+Example:
+Choose an option: 4
+
+Enter username to lock: developer
+
+User 'developer' has been locked.
+
+Users can later be restored using the unlock operation.
+
+👥 User & Group Management
+
+The tool supports:
+
+User creation
+Group creation
+Group assignment
+User deletion
+Account lock
+Account unlock
+
+This provides hands-on practice with Linux identity and access management concepts.
+
+📋 System User Enumeration
+
+The tool can list existing Linux user accounts by reading the system's user database:
+
+/etc/passwd
+
+This demonstrates practical usage of Linux system files and command-line processing.
+
+🧹 Input Sanitization
+
+User input is sanitized before processing.
+
+The project uses tools such as:
+
+xargs
+
+to trim unnecessary whitespace and applies pattern matching for confirmation inputs.
+
+For example:
+
+(y/n)
+(Y/N)
+
+are handled consistently.
+
+🛠️ Technologies & Linux Utilities
+Core
+Bash
+Linux
+Shell Scripting
+Linux Utilities
+useradd
+userdel
+groupadd
+usermod
+passwd
+passwd -l
+passwd -u
+awk
+grep
+xargs
+Concepts Practiced
+Linux user management
+Linux groups
+File permissions
+Root privileges
+Account lifecycle management
+Input validation
+Regular expressions
+Shell scripting
+Exit status handling
+Linux system administration
+📋 Requirements
+Operating System
+
+Supported environments include:
+
+Ubuntu 20.04+
+Debian
+RHEL
+CentOS
+WSL on Windows
+Privileges
+
+Root or sudo privileges are required because the script performs system-level user and group operations.
+
+Dependencies
+
+The project relies primarily on standard Linux command-line utilities.
+
+Required utilities include:
+
+bash
+awk
+grep
+passwd
+xargs
+shadow-utils
+
+Most of these are available by default on common Linux distributions.
+
+🚀 Installation & Setup
+1. Clone the Repository
+git clone https://github.com/Shubhamkahar196/Linux-user-management.git
+2. Navigate to the Project
+cd Linux-user-management
+3. Make the Script Executable
+chmod +x user_management.sh
+4. Run the Script
+sudo ./user_management.sh
+
+🖥️ CLI Menu
+
+After starting the script, an interactive menu is displayed:
+
+__________________________
+   User Management Script
+__________________________
+
+1- Create a new user
+2- Delete a user
+3- List all users
+4- Lock a user
+5- Unlock a user
+6- Exit
+
+__________________________
+
+Choose an option:
+💡 Example Workflow
+Create a Developer Account
+Choose an option: 1
+
+Enter username to create: developer
+
+Enter password for 'developer':
+Confirm password for 'developer':
+
+User 'developer' created successfully.
+
+Add user to a group? (y/n): y
+
+Enter group name: devteam
+
+Group 'devteam' does not exist.
+Create new group? (y/n): y
+
+Group 'devteam' created and user 'developer' added to it.
+Lock an Account
+Choose an option: 4
+
+Enter username to lock: developer
+
+User 'developer' has been locked.
+Unlock an Account
+Choose an option: 5
+
+Enter username to unlock: developer
+
+User 'developer' has been unlocked.
+📂 Project Structure
+Linux-user-management/
+│
+├── user_management.sh
+├── README.md
+
+
+📖 Build Article
+
+I documented the process of building this project and the Linux/Bash concepts involved in the following article:
+
+Building an Intermediate Linux & Bash Automation Project: User Management CLI Tool
+https://www.linkedin.com/pulse/building-intermediate-linux-bash-automation-project-user-kahar-c6wwf/
+
+Read the full article on LinkedIn
